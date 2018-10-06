@@ -1,7 +1,6 @@
 <template>
   <div class="blue merida">
     <div ref="board" class="cg-board-wrap"></div> </br>
-    <a @click="takeBack" class="button">Take back</a>
     {{this.board}}
   </div>
 </template>

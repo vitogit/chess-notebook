@@ -3,6 +3,7 @@
     <section class="hero is-fullheight">
       <div class="hero-head">
         <nav class="navbar">
+        
           <div class="container">
             <div>
               <a href="/">
@@ -13,11 +14,21 @@
             <div id="navbarMenu" class="navbar-menu">
               <div class="navbar-end"></div>
             </div>
+            <div class ="navbar-item">
+              <span style="font-size: 12px;font-weight: normal;" v-if="logged">
+                  {{useremail}} <br> 
+                  <button class="button is-info is-small" @click="signOff()">Salir</button>
+              </span>
+              <span v-if="!logged"><button class="button is-info" @click="signIn()">Sign-in</button></span>
+            </div>  
           </div>
         </nav>
       </div>
       <div>
         <div class="container">
+          <!-- <iframe width=600 height=397 frameborder=0
+          src="https://lichess.org/analysis?fen=rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR%20b%20KQkq%20-%200%201/embed/?theme=auto&bg=auto"
+          ></iframe> -->
           <div class="columns">
             <div class="column">
               <chessboard :fen="fen" @onMove="onMove"/>
@@ -58,7 +69,8 @@
                 </div>
                 <div class="card-content">
                   <chessboard :fen="t.fen" :shapes="t.shapes"/>
-                  <div v-html="t.notes" class="content is-size-7"></div>
+                  <div v-html="t.notes" class="content is-size-6"></div>
+                  Tags: <div v-html="t.tags" class="content is-size-7"></div>
                 </div>
               </div>
             </div>
@@ -97,14 +109,13 @@ export default {
       fen: '',
       notes: '',
       title: '',
+      logged: false,
     }
   },
   methods: {
     savePosition() {
       //TODO improve this
-      let shapes = vm.$children[0].$children[0].board.state.drawable.shapes
-      console.log("shapes________",shapes)
-      
+      let shapes = vm.$children[0].$children[0].board.state.drawable.shapes      
       let position = {
         title: this.title,
         fen: this.fen,
@@ -112,27 +123,68 @@ export default {
         notes: this.notes,
         tags: this.tags
       }
-      console.log("position________",position)
       this.positions.push(position)
+      this.saveFile()
     },
     onMove(data) {
-      console.log("data________",data)
       this.fen = data.fen
+    },
+    saveFile() {
+      let self = this 
+      let tempFile = {name: 'chess-notebook-positions.json', content: JSON.stringify(this.positions)}
+      window.driveService.saveFileRaw(tempFile, function(file){
+        self.$toast.open({
+            message: `${file.name} - Saved!`,
+            type: 'is-success'
+        })
+      })
+    },
+    loadFile(err, files) {
+      let tempFile = files[0]
+      let self = this 
+      driveService.loadFileRaw(tempFile, function(file){
+        self.positions = JSON.parse(file.content)
+        self.$toast.open({
+            message: `${file.name} - Cargado!`,
+            type: 'is-success'
+        })
+      })
+    },
+    signIn() {
+      window.loginService.signIn()
+    },
+    signOff(){
+      window.loginService.signOut()
+    },
+    initClient() {
+      window.loginService.initClient(this.updateSigninStatus)
+    },
+    updateSigninStatus(isSignedIn) {
+      this.logged = isSignedIn 
+      if (this.logged) {
+        this.useremail = window.loginService.userProfile().getEmail()
+        window.driveService.listFiles('chess-notebook-positions', this.loadFile)
+      }
     }
-
   },
   created() {
-      let position = {
-        title: 'Break e4',
-        fen: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
-        shapes: [{orig: "f4", pos: [242,121], brush: "green", mouseSq: "f4", dest: undefined}],
-        notes: 'Break with e4 to break the center',
-        tags: ['breaks', 'center']
-      }
-      this.positions.push(position)
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file'
+    const CLIENT_ID = '787907413982-ek7jje54nljmljno0rja381lg5hsan6h.apps.googleusercontent.com'
+    const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+    window.loginService = new LoginService(CLIENT_ID, SCOPES, DISCOVERY_DOCS)
+    window.driveService = new DriveService()
+    
+    let position = {
+      title: 'Break e4',
+      fen: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
+      shapes: [{orig: "f4", pos: [242,121], brush: "green", mouseSq: "f4", dest: undefined}],
+      notes: 'Break with e4 to break the center',
+      tags: ['breaks', 'center']
+    }
+    this.positions.push(position)
   }, 
   mounted() {
-
+    window.gapi.load('auth2', this.initClient)
   }
 }
 </script>
