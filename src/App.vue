@@ -31,18 +31,18 @@
           ></iframe> -->
           <div class="columns">
             <div class="column">
-              <chessboard :fen="fen" @onMove="onMove"/>
+              <chessboard :fen="currentPosition.fen" @onMove="onMove"/>
             </div>
             <div class="column">
               <b-field label="Title">
-                  <b-input v-model="title"></b-input>
+                  <b-input v-model="currentPosition.title"></b-input>
               </b-field>
               <b-field label="Fen">
                   <b-input v-model="fen"></b-input>
               </b-field>
               <b-field label="Tags">
                   <b-taginput
-                      v-model="tags"
+                      v-model="currentPosition.tags"
                       ellipsis
                       icon="label"
                       placeholder="Add a tag">
@@ -50,22 +50,23 @@
               </b-field>
               <p class="control">
                 <button @click="savePosition" class="button is-primary">Save</button>
+                <button @click="newPosition" class="button is-primary">New</button>
               </p>
             </div>
             <div class="column">
               <b-field label="Notes">
-                  <b-input type="textarea" v-model="notes"></b-input>
+                  <b-input type="textarea" v-model="currentPosition.notes"></b-input>
               </b-field>
-
             </div>
           </div>
-
-
           <div class="columns is-multiline"> 
             <div  v-for="(t, index) in positions" class="column is-one-third">
               <div class="card">
                 <div class="card-header">
-                  <p v-html="t.title" class="card-header-title"></p>
+                  <a @click="selectPosition(t)" v-html="t.title" class="card-header-title"></a>
+                                    {{t.id}}
+
+                  <a @click="removePosition(t)" href="#" class="card-header-icon"> x </a>
                 </div>
                 <div class="card-content">
                   <chessboard :fen="t.fen" :shapes="t.shapes"/>
@@ -75,8 +76,6 @@
               </div>
             </div>
           </div>
-          
-
         </div>
       </div>
       <div class="hero-foot">
@@ -103,27 +102,42 @@ export default {
   },
   data () {
     return {
-      username: 'e4guardian',
       positions: [],
-      tags: [],
-      fen: '',
-      notes: '',
-      title: '',
       logged: false,
+      fen: '',
+      currentPosition: {},
+      maxId: 0
     }
   },
   methods: {
+    selectPosition(p) {
+      this.currentPosition = p
+      this.fen = p.fen
+    },
+    removePosition(pos) {
+      this.positions = this.positions.filter(p => p.id !== pos.id)
+    },
+    newPosition() {
+      this.currentPosition = {id: this.getMaxId(this.positions)+1}
+      this.fen = ''
+    },    
     savePosition() {
       //TODO improve this
-      let shapes = vm.$children[0].$children[0].board.state.drawable.shapes      
-      let position = {
-        title: this.title,
-        fen: this.fen,
-        shapes: shapes,
-        notes: this.notes,
-        tags: this.tags
+      let self = this
+      let shapes = vm.$children[0].$children[0].board.state.drawable.shapes
+      this.currentPosition.fen = this.fen
+
+      if (this.currentPosition.id) {
+        this.positions.forEach(function(pos,index) { 
+
+           if (pos.id == self.currentPosition.id) {
+             self.positions[index] = self.currentPosition
+           }
+        }) 
+      } else {
+        this.currentPosition.id = this.maxId + 1
+        this.positions.push(this.currentPosition)
       }
-      this.positions.push(position)
       this.saveFile()
     },
     onMove(data) {
@@ -140,15 +154,22 @@ export default {
       })
     },
     loadFile(err, files) {
+      let loading = this.$loading.open()
       let tempFile = files[0]
-      let self = this 
+      let self = this
       driveService.loadFileRaw(tempFile, function(file){
         self.positions = JSON.parse(file.content)
+        self.maxId = self.getMaxId(self.positions)
+        loading.close()
         self.$toast.open({
             message: `${file.name} - Cargado!`,
             type: 'is-success'
         })
       })
+    },
+    getMaxId(positions) {
+      let ids = positions.map(p => p.id || 0)
+      return Math.max(...ids)
     },
     signIn() {
       window.loginService.signIn()
@@ -173,15 +194,6 @@ export default {
     const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
     window.loginService = new LoginService(CLIENT_ID, SCOPES, DISCOVERY_DOCS)
     window.driveService = new DriveService()
-    
-    let position = {
-      title: 'Break e4',
-      fen: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
-      shapes: [{orig: "f4", pos: [242,121], brush: "green", mouseSq: "f4", dest: undefined}],
-      notes: 'Break with e4 to break the center',
-      tags: ['breaks', 'center']
-    }
-    this.positions.push(position)
   }, 
   mounted() {
     window.gapi.load('auth2', this.initClient)

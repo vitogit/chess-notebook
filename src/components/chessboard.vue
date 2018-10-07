@@ -117,7 +117,6 @@ export default {
       info['fen'] = this.game.fen()
       info['pgn'] = this.game.pgn()
       info['shapes'] = this.board.state.drawable.shapes
-      console.log("this.board.state.shapes________",this.board.state.shapes)
       this.$emit('onMove', info)
     },
     isFinished() {
