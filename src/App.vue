@@ -106,7 +106,8 @@ export default {
       logged: false,
       fen: '',
       currentPosition: {},
-      maxId: 0
+      maxId: 0,
+      currentFile: {}
     }
   },
   methods: {
@@ -118,26 +119,25 @@ export default {
       this.positions = this.positions.filter(p => p.id !== pos.id)
     },
     newPosition() {
-      this.currentPosition = {id: this.getMaxId(this.positions)+1}
+      this.currentPosition = {}
       this.fen = ''
-    },    
+    },
     savePosition() {
       //TODO improve this
       let self = this
       let shapes = vm.$children[0].$children[0].board.state.drawable.shapes
       this.currentPosition.fen = this.fen
-
       if (this.currentPosition.id) {
         this.positions.forEach(function(pos,index) { 
-
            if (pos.id == self.currentPosition.id) {
              self.positions[index] = self.currentPosition
            }
         }) 
       } else {
-        this.currentPosition.id = this.maxId + 1
+        this.currentPosition.id = this.getMaxId(this.positions) + 1
         this.positions.push(this.currentPosition)
       }
+      this.currentPosition = {}
       this.saveFile()
     },
     onMove(data) {
@@ -145,8 +145,10 @@ export default {
     },
     saveFile() {
       let self = this 
-      let tempFile = {name: 'chess-notebook-positions.json', content: JSON.stringify(this.positions)}
-      window.driveService.saveFileRaw(tempFile, function(file){
+      self.currentFile.name = 'chess-notebook-positions.json'
+      self.currentFile.content = JSON.stringify(this.positions)
+      window.driveService.saveFileRaw(self.currentFile, function(file){
+        self.currentFile = file
         self.$toast.open({
             message: `${file.name} - Saved!`,
             type: 'is-success'
@@ -154,22 +156,31 @@ export default {
       })
     },
     loadFile(err, files) {
-      let loading = this.$loading.open()
-      let tempFile = files[0]
-      let self = this
-      driveService.loadFileRaw(tempFile, function(file){
-        self.positions = JSON.parse(file.content)
-        self.maxId = self.getMaxId(self.positions)
-        loading.close()
-        self.$toast.open({
-            message: `${file.name} - Cargado!`,
-            type: 'is-success'
+      if (files.length > 0) {
+        let loading = this.$loading.open()
+        let tempFile = files[0]
+        let self = this
+        driveService.loadFileRaw(tempFile, function(file){
+          self.currentFile = file
+          self.positions = JSON.parse(file.content)
+          self.maxId = self.getMaxId(self.positions)
+          loading.close()
+          self.$toast.open({
+              message: `${file.name} - Cargado!`,
+              type: 'is-success'
+          })
         })
-      })
+      }
+
     },
     getMaxId(positions) {
-      let ids = positions.map(p => p.id || 0)
-      return Math.max(...ids)
+      if (positions.length > 0) {
+        let ids = positions.map(p => p.id || 0)
+        return Math.max(...ids)
+      } else {
+        return 0
+      }
+
     },
     signIn() {
       window.loginService.signIn()
