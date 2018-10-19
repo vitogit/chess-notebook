@@ -31,7 +31,7 @@
           ></iframe> -->
           <div class="columns">
             <div class="column">
-              <chessboard :fen="currentPosition.fen" @onMove="onMove"/>
+              <chessboard ref="currentBoard" :shapes="currentPosition.shapes" :fen="currentPosition.fen" @onMove="onMove"/>
             </div>
             <div class="column">
               <b-field label="Title">
@@ -64,8 +64,6 @@
               <div class="card">
                 <div class="card-header">
                   <a @click="selectPosition(t)" v-html="t.title" class="card-header-title"></a>
-                                    {{t.id}}
-
                   <a @click="removePosition(t)" href="#" class="card-header-icon"> x </a>
                 </div>
                 <div class="card-content">
@@ -110,6 +108,14 @@ export default {
       currentFile: {}
     }
   },
+  watch: {
+    fen: function (newFen) {
+      this.currentPosition.fen = newFen
+    },
+    currentPosition: function (newPosition) {
+      this.fen = newPosition.fen
+    }
+  },
   methods: {
     selectPosition(p) {
       this.currentPosition = p
@@ -125,8 +131,9 @@ export default {
     savePosition() {
       //TODO improve this
       let self = this
-      let shapes = vm.$children[0].$children[0].board.state.drawable.shapes
+      let shapes = this.$refs.currentBoard.board.state.drawable.shapes
       this.currentPosition.fen = this.fen
+      this.currentPosition.shapes = shapes
       if (this.currentPosition.id) {
         this.positions.forEach(function(pos,index) { 
            if (pos.id == self.currentPosition.id) {

@@ -34,6 +34,9 @@ export default {
     fen: function (newFen) {
       this.fen = newFen
       this.loadPosition()
+    },
+    shapes: function (newShapes) {
+      this.board.setShapes(newShapes)
     }
   },
   methods: {
