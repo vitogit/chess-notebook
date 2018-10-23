@@ -57,6 +57,7 @@
               <b-field label="Notes">
                   <b-input type="textarea" v-model="currentPosition.notes"></b-input>
               </b-field>
+              <a class="button" target="_blank" :href="'https://lichess.org/analysis?fen='+fen"> Analyze fen</a>
             </div>
           </div>
           <div class="columns is-multiline"> 
