@@ -1,6 +1,6 @@
 {
-  "name": "chess-blunder-investigator",
-  "description": "Generate a pgn file with tactics from your own blunders",
+  "name": "chess-notebook",
+  "description": "Chess notebook",
   "version": "1.0.0",
   "author": "vitogit",
   "license": "MIT",
@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules",
-    "publish": "npm run build && cp -r static dist && cp index-prod.html dist/index.html && ./deploy.sh"
+    "publish": "npm run build; cp ./static/favicon.png docs; cp build.js docs; cp index-prod.html docs/index.html; cp -r ./node_modules/gdrive-sync-js/lib/ docs ; "
   },
   "dependencies": {
     "buefy": "^0.6.7",
