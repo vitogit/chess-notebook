@@ -17,7 +17,7 @@
             <div class ="navbar-item">
               <span style="font-size: 12px;font-weight: normal;" v-if="logged">
                   {{useremail}} <br> 
-                  <button class="button is-info is-small" @click="signOff()">Salir</button>
+                  <button class="button is-info is-small" @click="signOff()">Exit</button>
               </span>
               <span v-if="!logged"><button class="button is-info" @click="signIn()">Sign-in</button></span>
             </div>  
@@ -60,9 +60,20 @@
               <a class="button" target="_blank" :href="'https://lichess.org/analysis?fen='+fen"> Analyze fen</a>
             </div>
           </div>
-          <div class="columns is-multiline"> 
-            <div  v-for="(t, index) in positions" class="column is-one-third">
-              <div class="card">
+          <div>
+            <b-field>
+              <b-checkbox-button v-for="tag in allTags"
+                  :native-value="tag"
+                  v-model="selectedTags"
+                  @click="reloadPositions()">
+                  <span>{{tag}}</span>
+              </b-checkbox-button>
+            </b-field>
+          </div>
+          <br>
+          <div class="columns is-multiline" :key="positionsComponentKey"> 
+            <div v-for="(t, index) in filterByTags(positions)" class="column is-one-third" >
+              <div class="card" v-show="!t.hide">
                 <div class="card-header">
                   <a @click="selectPosition(t)" v-html="t.title" class="card-header-title"></a>
                   <a @click="removePosition(t)" href="#" class="card-header-icon"> x </a>
@@ -102,11 +113,14 @@ export default {
   data () {
     return {
       positions: [],
+      selectedTags: [],
+      allTags: [],
       logged: false,
       fen: '',
       currentPosition: {},
       maxId: 0,
-      currentFile: {}
+      currentFile: {},
+      positionsComponentKey: 0
     }
   },
   watch: {
@@ -174,9 +188,10 @@ export default {
           self.maxId = self.getMaxId(self.positions)
           loading.close()
           self.$toast.open({
-              message: `${file.name} - Cargado!`,
+              message: `${file.name} - Loaded!`,
               type: 'is-success'
           })
+          self.loadTags()
         })
       }
 
@@ -205,6 +220,25 @@ export default {
         this.useremail = window.loginService.userProfile().getEmail()
         window.driveService.listFiles('chess-notebook-positions', this.loadFile)
       }
+    },
+    filterByTags() {
+      if (this.selectedTags.length > 0) {
+        return this.positions.filter(p => p.tags.some(r => this.selectedTags.indexOf(r) >= 0))
+      } else {
+        return this.positions
+      }
+    },
+    reloadPositionsComponent() {
+      this.positionsComponentKey += 1
+    },
+    loadTags() {
+      let tempTags = new Set()
+      this.positions.forEach(function(pos,index) { 
+        if (pos.tags) {
+          pos.tags.forEach(tag => tempTags.add(tag))
+        }
+      }) 
+      this.allTags = Array.from(tempTags)
     }
   },
   created() {
