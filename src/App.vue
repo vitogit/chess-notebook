@@ -40,6 +40,9 @@
               <b-field label="Fen">
                   <b-input v-model="fen"></b-input>
               </b-field>
+              <b-field label="Id">
+                  <b-input v-model="currentPosition.id"></b-input>
+              </b-field>
               <b-field label="Tags">
                   <b-taginput
                       v-model="currentPosition.tags"
@@ -51,6 +54,7 @@
               <p class="control">
                 <button @click="savePosition" class="button is-primary">Save</button>
                 <button @click="newPosition" class="button is-primary">New</button>
+                <button @click="duplicate" class="button is-primary">Duplicate</button>
               </p>
             </div>
             <div class="column">
@@ -77,6 +81,7 @@
                 <div class="card-header">
                   <a @click="selectPosition(t)" v-html="t.title" class="card-header-title"></a>
                   <a @click="removePosition(t)" href="#" class="card-header-icon"> x </a>
+                  {{t.id}}
                 </div>
                 <div class="card-content">
                   <chessboard :fen="t.fen" :shapes="t.shapes"/>
@@ -133,7 +138,7 @@ export default {
   },
   methods: {
     selectPosition(p) {
-      this.currentPosition = p
+      this.currentPosition = { ...p } // Clone the oject
       this.fen = p.fen
     },
     removePosition(pos) {
@@ -142,6 +147,10 @@ export default {
     newPosition() {
       this.currentPosition = {}
       this.fen = ''
+    },
+    duplicate() {
+      this.currentPosition.id = undefined
+      this.currentPosition.title = 'Copy of ' + this.currentPosition.title
     },
     savePosition() {
       //TODO improve this
@@ -152,14 +161,15 @@ export default {
       if (this.currentPosition.id) {
         this.positions.forEach(function(pos,index) { 
            if (pos.id == self.currentPosition.id) {
-             self.positions[index] = self.currentPosition
+             // Clone the oject and use splice to invoke reactivity
+             self.positions.splice(index, 1, { ...self.currentPosition })
            }
         }) 
       } else {
         this.currentPosition.id = this.getMaxId(this.positions) + 1
-        this.positions.push(this.currentPosition)
+        let tempPosition = { ...this.currentPosition }
+        this.positions.unshift(tempPosition)
       }
-      this.currentPosition = {}
       this.saveFile()
     },
     onMove(data) {
