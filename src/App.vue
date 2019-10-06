@@ -31,14 +31,14 @@
           ></iframe> -->
           <div class="columns">
             <div class="column">
-              <chessboard ref="currentBoard" :shapes="currentPosition.shapes" :fen="currentPosition.fen" @onMove="onMove"/>
+              <editor ref="currentBoard" :shapes="currentPosition.shapes" :fen="currentPosition.fen" @onMove="onMove"/>
             </div>
             <div class="column">
               <b-field label="Title">
                   <b-input v-model="currentPosition.title"></b-input>
               </b-field>
               <b-field label="Fen">
-                  <b-input v-model="fen"></b-input>
+                  <b-input custom-class="tiny-font" v-model="fen"></b-input>
               </b-field>
               <b-field label="Id">
                   <b-input v-model="currentPosition.id"></b-input>
@@ -106,14 +106,17 @@
 
 <script>
 import chessboard from './components/chessboard'
+import editor from './components/editor'
 import './components/style/theme.css'
+import './components/style/editor.css'
 
 import Chess from 'chess.js'
 
 export default {
   name: 'app',
   components: {
-    chessboard
+    chessboard,
+    editor
   },
   data () {
     return {
@@ -189,15 +192,15 @@ export default {
     },
     loadFile(err, files) {
       if (files.length > 0) {
-        let loading = this.$loading.open()
+        // let loading = this.$loading.open()
         let tempFile = files[0]
         let self = this
         driveService.loadFileRaw(tempFile, function(file){
           self.currentFile = file
           self.positions = JSON.parse(file.content)
           self.maxId = self.getMaxId(self.positions)
-          loading.close()
-          self.$toast.open({
+          // loading.close()
+          self.$buefy.toast.open({
               message: `${file.name} - Loaded!`,
               type: 'is-success'
           })
